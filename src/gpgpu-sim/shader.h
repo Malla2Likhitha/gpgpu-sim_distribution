@@ -69,6 +69,8 @@
 #define WRITE_PACKET_SIZE 8
 
 #define WRITE_MASK_SIZE 8
+extern long long int inst_ccount ;   //..
+extern long long int extra;  //..
 
 class gpgpu_context;
 
@@ -99,10 +101,23 @@ class thread_ctx_t {
 
 class shd_warp_t {
  public:
+  //  ...
+  long long int warp_prog;
+  long long int cta_prog;
+  long long int warp_progress(){
+    return warp_prog; // return the instruction count that has completed
+  }
+  long long int cta_progress(){
+    return cta_prog; // return the instruction count that has completed
+  }
+//..
+
   shd_warp_t(class shader_core_ctx *shader, unsigned warp_size)
       : m_shader(shader), m_warp_size(warp_size) {
     m_stores_outstanding = 0;
     m_inst_in_pipeline = 0;
+    warp_prog=0;  //..
+    cta_prog=0;   //..
     reset();
   }
   void reset() {
@@ -233,6 +248,7 @@ class shd_warp_t {
     m_inst_in_pipeline--;
   }
 
+  // ..
   unsigned get_cta_id() const { return m_cta_id; }
 
   unsigned get_dynamic_warp_id() const { return m_dynamic_warp_id; }
@@ -577,6 +593,8 @@ class opndcoll_rfu_t {  // operand collector based register file unit
   // modifiers
   bool writeback(warp_inst_t &warp);
 
+  // backtracking the port number to allocate the cu 
+  // this function is called after ldst unit calls for steps
   void step() {
     dispatch_ready_cu();
     allocate_reads();
@@ -1879,13 +1897,32 @@ class shader_core_ctx : public core_t {
                   unsigned shader_id, unsigned tpc_id,
                   const shader_core_config *config,
                   const memory_config *mem_config, shader_core_stats *stats);
-
   // used by simt_core_cluster:
   // modifiers
   void cycle();
   void reinit(unsigned start_thread, unsigned end_thread,
               bool reset_not_completed);
   void issue_block2core(class kernel_info_t &kernel);
+
+  // warp progress.....f....
+  void calc_all_warp_progress(){
+    std::map<unsigned int, long long int> cta_id_to_progress;
+
+     for (std::vector<shd_warp_t*>::iterator it = m_warp.begin(); it != m_warp.end(); ++it){
+      shd_warp_t* warp = *it;
+      auto iterr = cta_id_to_progress.find(warp->get_cta_id());
+      if(iterr!=cta_id_to_progress.end()){
+        cta_id_to_progress[warp->get_cta_id()] += warp->warp_prog;
+      }
+      else
+        cta_id_to_progress[warp->get_cta_id()] = warp->warp_prog;
+     }
+
+     for (std::vector<shd_warp_t*>::iterator it = m_warp.begin(); it != m_warp.end(); ++it){
+      shd_warp_t* warp = *it;
+      warp->cta_prog = cta_id_to_progress[warp->get_cta_id()];
+     }
+  }  //f...
 
   void cache_flush();
   void cache_invalidate();
@@ -1900,6 +1937,16 @@ class shader_core_ctx : public core_t {
     printf("GPGPU-Sim uArch: Shader %d bind to kernel %u \'%s\'\n", m_sid,
            m_kernel->get_uid(), m_kernel->name().c_str());
   }
+//...
+  unsigned int get_shader_id (){
+    return m_sid;
+  }
+
+  std::vector<shd_warp_t *> get_m_warp(){
+    return m_warp;
+  }
+
+//...
 
   // accessors
   bool fetch_unit_response_buffer_full() const;
