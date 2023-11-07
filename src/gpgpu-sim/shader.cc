@@ -1339,14 +1339,14 @@ else{
 
                 if (execute_on_SP) {
                   m_shader->issue_warp(*m_sp_out, pI, active_mask, warp_id,
-                                       m_id);
+                                       m_id,m_idl);
                   issued++;
                   issued_inst = true;
                   warp_inst_issued = true;
                   previous_issued_inst_exec_type = exec_unit_type_t::SP;
                 } else if (execute_on_INT) {
                   m_shader->issue_warp(*m_int_out, pI, active_mask, warp_id,
-                                       m_id);
+                                       m_id,m_idl);
                   issued++;
                   issued_inst = true;
                   warp_inst_issued = true;
@@ -1358,7 +1358,7 @@ else{
                                                   exec_unit_type_t::DP)) {
                 if (dp_pipe_avail) {
                   m_shader->issue_warp(*m_dp_out, pI, active_mask, warp_id,
-                                       m_id);
+                                       m_id,m_idl);
                   issued++;
                   issued_inst = true;
                   warp_inst_issued = true;
@@ -1373,7 +1373,7 @@ else{
                                                 exec_unit_type_t::SFU)) {
                 if (sfu_pipe_avail) {
                   m_shader->issue_warp(*m_sfu_out, pI, active_mask, warp_id,
-                                       m_id);
+                                       m_id,m_idl);
                   issued++;
                   issued_inst = true;
                   warp_inst_issued = true;
@@ -1384,7 +1384,7 @@ else{
                                                   exec_unit_type_t::TENSOR)) {
                 if (tensor_core_pipe_avail) {
                   m_shader->issue_warp(*m_tensor_core_out, pI, active_mask,
-                                       warp_id, m_id);
+                                       warp_id, m_id,m_idl);
                   issued++;
                   issued_inst = true;
                   warp_inst_issued = true;
@@ -1401,11 +1401,11 @@ else{
                     (m_shader->m_config->m_specialized_unit[spec_id].num_units >
                      0) &&
                     spec_reg_set->has_free(m_shader->m_config->sub_core_model,
-                                           m_id);
+                                           m_id,m_idl);
 
                 if (spec_pipe_avail) {
                   m_shader->issue_warp(*spec_reg_set, pI, active_mask, warp_id,
-                                       m_id);
+                                       m_id,m_idl);
                   issued++;
                   issued_inst = true;
                   warp_inst_issued = true;
