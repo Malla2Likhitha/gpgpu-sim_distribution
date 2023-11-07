@@ -1855,7 +1855,6 @@ void gpgpu_sim::cycle() {
         ((gpu_sim_cycle + gpu_tot_sim_cycle) >= g_single_step)) {
       raise(SIGTRAP);  // Debug breakpoint
     }
-    // justa0 instruction is added why ?
     gpu_sim_cycle++;
 
     if (g_interactive_debugger_enabled) gpgpu_debug();
