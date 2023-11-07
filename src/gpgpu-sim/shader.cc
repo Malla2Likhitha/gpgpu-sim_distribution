@@ -1259,7 +1259,7 @@ else{
                 (pI->op == TENSOR_CORE_LOAD_OP) ||
                 (pI->op == TENSOR_CORE_STORE_OP)) {
               if (m_mem_out->has_free(m_shader->m_config->sub_core_model,
-                                      m_id) &&
+                                      m_id, m_idl) &&
                   (!diff_exec_units ||
                    previous_issued_inst_exec_type != exec_unit_type_t::MEM)) {
                 m_shader->issue_warp(*m_mem_out, pI, active_mask, warp_id,
