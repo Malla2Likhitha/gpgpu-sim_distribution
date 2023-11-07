@@ -1312,6 +1312,7 @@ class register_set {
           return true;
         }
       }
+      //printf("The warp is scheduled to %u", m_idl);
       return false;
     }
     else return regs[red_id]->empty();
