@@ -1304,7 +1304,15 @@ class register_set {
     // sched id)
     if (!sub_core_model) return has_free();
 
-    assert(reg_id < regs.size());
+    if (!regs[red_id]->empty()) {
+        assert(reg_id < regs.size());
+      for (unsigned i = 0; i < regs.size(); i++) {
+        m_idl=i;
+        return true;
+      }
+      }
+
+    
     return regs[reg_id]->empty();
   }
   bool has_ready() {
