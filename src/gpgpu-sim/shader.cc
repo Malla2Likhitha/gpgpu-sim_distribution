@@ -52,6 +52,16 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
+extern long long int inst_ccount = 0;
+extern long long int extra = 0;
+
+std::map<unsigned int, long long int> cta_id_to_prog;
+std::map<unsigned int, unsigned int> warp_id_to_cta_id;
+std::map<int, unsigned int> cta_number_to_m_sid;
+long long int w_icount =0;
+int cta_number = 0;
+int last_cta_issued;
+
 mem_fetch *shader_core_mem_fetch_allocator::alloc(
     new_addr_type addr, mem_access_type type, unsigned size, bool wr,
     unsigned long long cycle) const {
@@ -1127,6 +1137,9 @@ void scheduler_unit::order_by_priority(
   }
 }
 
+//order_warps();
+int counter_again_cta_number=0; //..
+int limit =0; //..
 void scheduler_unit::cycle() {
   SCHED_DPRINTF("scheduler_unit::cycle()\n");
   bool valid_inst =
@@ -1136,10 +1149,39 @@ void scheduler_unit::cycle() {
                              // waiting for pending register writes
   bool issued_inst = false;  // of these we issued one
 
-  order_warps();
+   std::map<unsigned int,bool>Shadercore_done;     //f...
+
+   for (std::vector<shd_warp_t *>::const_iterator iter =
+          m_next_cycle_prioritized_warps.begin();
+       iter != m_next_cycle_prioritized_warps.end(); iter++){
+
+        shader_core_ctx *core_used = (*iter)->get_shader();
+        if (Shadercore_done.find(core_used->get_shader_id()) == Shadercore_done.end()){
+        Shadercore_done[core_used->get_shader_id()] = true;
+        core_used->calc_all_warp_progress();
+        }
+  }
+
+
+// shorting by cta progress every 128 cta means 1 kernel 
+// if(last_cta_issued == cta_number) printf(" %d ", cta_number);
+if(cta_number != 0 && cta_number%last_cta_issued == 0) {
+  std::sort(m_next_cycle_prioritized_warps.begin(), m_next_cycle_prioritized_warps.end(), 
+    [](shd_warp_t* a, shd_warp_t* b) {
+        if (a->cta_progress() != b->cta_progress()) {
+        return a->cta_progress() < b->cta_progress();
+        }
+        return a->get_warp_id() < b->get_warp_id();
+    }); 
+}
+else{
+   order_warps();
+}   //f...
+
   for (std::vector<shd_warp_t *>::const_iterator iter =
            m_next_cycle_prioritized_warps.begin();
        iter != m_next_cycle_prioritized_warps.end(); iter++) {
+
     // Don't consider warps that are not yet valid
     if ((*iter) == NULL || (*iter)->done_exit()) {
       continue;
@@ -1392,6 +1434,12 @@ void scheduler_unit::cycle() {
         do_on_warp_issued(warp_id, issued, iter);
       }
       checked++;
+
+        //progress....
+      w_icount = pI->active_count();
+      (*iter)->warp_prog+=w_icount; // warp progress being update 
+        //....
+
     }
     if (issued) {
       // This might be a bit inefficient, but we need to maintain
@@ -1730,6 +1778,8 @@ void shader_core_ctx::warp_inst_complete(const warp_inst_t &inst) {
     m_stats->m_num_sim_insn[m_sid] += inst.active_count();
 
   m_stats->m_num_sim_winsn[m_sid]++;
+  inst_ccount++;  //...
+  extra += inst.active_count();  //...
   m_gpu->gpu_sim_insn += inst.active_count();
   inst.completed(m_gpu->gpu_tot_sim_cycle + m_gpu->gpu_sim_cycle);
 }
@@ -3227,12 +3277,12 @@ unsigned int shader_core_config::max_cta(const kernel_info_t &k) const {
   result = gs_min2(result, result_shmem);
   result = gs_min2(result, result_regs);
   result = gs_min2(result, result_cta);
-
+  last_cta_issued = k.num_blocks();    //...
   static const struct gpgpu_ptx_sim_info *last_kinfo = NULL;
   if (last_kinfo !=
       kernel_info) {  // Only print out stats if kernel_info struct changes
     last_kinfo = kernel_info;
-    printf("GPGPU-Sim uArch: CTA/core = %u, limited by:", result);
+    printf("GPGPU-Sim uArch: CTA/core = %u, limited by: %u , %d ", result , num_shader(), last_cta_issued);  //...
     if (result == result_thread) printf(" threads");
     if (result == result_shmem) printf(" shmem");
     if (result == result_regs) printf(" regs");
@@ -3240,6 +3290,7 @@ unsigned int shader_core_config::max_cta(const kernel_info_t &k) const {
     printf("\n");
   }
 
+  // last_cta_issued = result * MAX_CTA_PER_SHADER; //...
   // gpu_max_cta_per_shader is limited by number of CTAs if not enough to keep
   // all cores busy
   if (k.num_blocks() < result * num_shader()) {
@@ -3359,7 +3410,7 @@ void shader_core_ctx::cycle() {
   m_stats->shader_cycles[m_sid]++;
   writeback();
   execute();
-  read_operands();
+  read_operands(); // new instruction source operand 
   issue();
   for (int i = 0; i < m_config->inst_fetch_throughput; ++i) {
     decode();
@@ -4219,6 +4270,10 @@ unsigned simt_core_cluster::issue_block2core() {
         //            m_config->max_cta(*kernel)) ) {
         m_core[core]->can_issue_1block(*kernel)) {
       m_core[core]->issue_block2core(*kernel);
+
+      cta_number++;   //...
+      cta_number_to_m_sid[cta_number]=m_core[core]->get_shader_id();   //...
+
       num_blocks_issued++;
       m_cta_issue_next_core = core;
       break;
