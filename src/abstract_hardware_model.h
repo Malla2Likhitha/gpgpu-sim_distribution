@@ -1299,7 +1299,7 @@ class register_set {
     }
     return false;
   }
-  bool has_free(bool sub_core_model, unsigned reg_id) {
+  bool has_free(bool sub_core_model, unsigned reg_id, unsigned m_idl) {
     // in subcore model, each sched has a one specific reg to use (based on
     // sched id)
     if (!sub_core_model) return has_free();
@@ -1307,13 +1307,16 @@ class register_set {
     if (!regs[red_id]->empty()) {
         assert(reg_id < regs.size());
       for (unsigned i = 0; i < regs.size(); i++) {
-        m_idl=i;
-        return true;
+        if (not regs[i]->empty()) {
+          m_idl=i;
+          return true;
+        }
       }
-      }
+      return false;
+    }
+    else return regs[red_id]->empty();
 
     
-    return regs[reg_id]->empty();
   }
   bool has_ready() {
     for (unsigned i = 0; i < regs.size(); i++) {
