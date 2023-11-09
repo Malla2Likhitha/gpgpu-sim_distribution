@@ -1304,18 +1304,17 @@ class register_set {
     // sched id)
     if (!sub_core_model) return has_free();
 
-    if (!regs[red_id]->empty()) {
         assert(reg_id < regs.size());
+    unsigned int reg_size=regs.size();
+    
       for (unsigned i = 0; i < regs.size(); i++) {
-        if (not regs[i]->empty()) {
-          m_idl=i;
+        if (regs[(reg_id+i)%reg_size]->empty()) {
+          *shared_shedule_id=(reg_id+i)%reg_size;
           return true;
         }
       }
       //printf("The warp is scheduled to %u", m_idl);
       return false;
-    }
-    else return regs[red_id]->empty();
 
     
   }
