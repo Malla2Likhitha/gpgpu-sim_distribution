@@ -1004,7 +1004,9 @@ void exec_shader_core_ctx::func_exec_inst(warp_inst_t &inst) {
 void shader_core_ctx::issue_warp(register_set &pipe_reg_set,
                                  const warp_inst_t *next_inst,
                                  const active_mask_t &active_mask,
-                                 unsigned warp_id, unsigned sch_id, unsigned m_idl) {
+                                 unsigned warp_id, unsigned sch_id, unsigned sch_id1) {
+    if(sch_id1!=-1)
+        sch_id=sch_id1;
   warp_inst_t **pipe_reg =
       pipe_reg_set.get_free(m_config->sub_core_model, sch_id);
   assert(pipe_reg);
