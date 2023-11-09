@@ -5,3 +5,15 @@ Following are the results of the en sem project
 
 
 ![bar-graph (2)](https://github.com/Malla2Likhitha/gpgpu-sim_distribution/assets/98963116/353fe717-4591-4534-92bf-6592efd48dcb)
+
+
+![bar-graph (3)](https://github.com/Malla2Likhitha/gpgpu-sim_distribution/assets/98963116/345540ee-fc80-4931-83d9-fb2d17fbeb0d)
+
+
+
+
+
+
+
+
+
