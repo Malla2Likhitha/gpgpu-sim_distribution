@@ -2181,7 +2181,7 @@ class shader_core_ctx : public core_t {
   friend class LooseRoundRobbinScheduler;
   virtual void issue_warp(register_set &warp, const warp_inst_t *pI,
                   const active_mask_t &active_mask, unsigned warp_id,
-                  unsigned sch_id);
+                  unsigned sch_id,unsigned sch_id1);
 
   void create_front_pipeline();
   void create_schedulers();
